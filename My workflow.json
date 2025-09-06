@@ -1,0 +1,135 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "id": "d4ac9102-aca1-42fa-adca-7becb893237f",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1312,
+        48
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "kwp4IknvBrLsO1Yl",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "functionCode": "// Extract sender email using regex\nconst from = $json[\"From\"];\nconst senderMatch = from.match(/<(.+)>/);\nconst sender = senderMatch ? senderMatch[1] : from;\n\n// Extract subject\nconst subject = $json[\"Subject\"];\n\n// Extract body (using snippet as fallback)\nconst body = $json[\"snippet\"] || \"\";\n\n// Return the extracted data\nreturn [{\n  sender,\n  subject,\n  body\n}];"
+      },
+      "id": "310361df-5c6a-42f2-a7a6-ffc567a36dde",
+      "name": "Extract Email Data",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        -1056,
+        48
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an AI email classifier. Your task is to decide whether an email is \"spam\" or \"not spam\".\n\nSpam emails include: \n- Unwanted promotions, advertisements, or bulk marketing messages. \n- Messages asking for money, financial scams, or \"too good to be true\" offers. \n- Phishing attempts, suspicious links, or requests for sensitive information. \n- Generic, irrelevant, or mass-mailed content.\n\nNot spam emails include:\n- Personal or work-related conversations. \n- Transactional updates (receipts, OTPs, booking confirmations). \n- Relevant and expected communication from known services. \n\nClassify the following email:\n\nSender:  {{ $json.sender }}\nSubject: {{ $json.subject }}\nBody: {{ $json.body }}\n\nReturn the result in JSON format like this:  \n{\n  \"classification\": \"spam\" | \"not spam\",\n  \"confidence\": \"high\" | \"medium\" | \"low\",\n  \"reason\": \"short explanation of why you classified it this way\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -784,
+        48
+      ],
+      "id": "6843a5e8-ec86-4f9b-a4fe-a15c3cd9bf25",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -848,
+        304
+      ],
+      "id": "eb4037e2-78c1-4805-a531-bd26bf99e6a4",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "hbJOFExIdBcpFEW9",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Extract Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Email Data": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e1485843-6257-452e-849b-f5a4f39280d2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f8f2a5b16b88af91b120ea2306cc13a66b7357f86ec7068c0a9d3a35dc3bcbe"
+  },
+  "id": "xFbSV8JewL1P2FLi",
+  "tags": []
+}
